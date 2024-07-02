@@ -96,6 +96,12 @@ def do_node_clean(task, clean_steps=None, disable_ramdisk=False):
                      '%s', node.uuid)
             prepare_result = None
     except Exception as e:
+        if isinstance(e, exception.AgentConnectionFailed):
+            print(task.node.driver_internal_info)
+            LOG.info('Agent is not yet running on node %(node)s, waiting for agent to come up', {'node': node.uuid})
+            target_state = states.MANAGEABLE if manual_clean else None
+            task.process_event('wait', target_state=target_state)
+            return
         msg = (_('Failed to prepare node %(node)s for cleaning: %(e)s')
                % {'node': node.uuid, 'e': e})
         return utils.cleaning_error_handler(task, msg, traceback=True)
